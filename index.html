@@ -1,0 +1,193 @@
+<html>
+<script>
+	const barsPerChord = 2;
+	const bpm = 60;
+	const chordsPerSession = 2;
+	const allChords = ['A', 'C', 'D', 'E', 'G', 'Am', 'Dm', 'Em']
+</script>
+
+<style>
+	.container {
+	  text-align: center;
+	  display:none;
+	}
+
+	.playing .container {
+		display: block;
+	}
+
+	.playing .audio {
+		display: none;
+	}
+
+	.row {
+	  width: 300px;
+	  margin: 0 auto;
+	}
+
+	.current-chord {
+	  font-size: 120px;
+	}
+
+	.next-chord {
+	  font-size: 60px;
+	}
+
+	.count {
+	  font-size: 30px;
+	}
+
+	figure {
+	  height: 200px;
+	  display: -ms-flex;
+	  display: -webkit-flex;
+	  display: flex;
+	}
+
+	figure button[name="play"] {
+	  width: 100px;
+	  height: 100px;
+	  background: grey;
+	  border: none;
+	  border-radius: 100%;
+	  margin: auto;
+	  cursor: pointer;
+	  transition: all 0.6s ease;
+	}
+	figure button[name="play"]:hover {
+	  outline: 0;
+	  box-shadow: 0 0 0 6px rgba(255,255,100,0.6);
+	}
+
+	figure button[name="play"]::after {
+	  content: '';
+	  display: inline-block;
+	  position: relative;
+	  top: 1px;
+	  left: 3px;
+	  border-style: solid;
+	  border-width: 25px 0 25px 40px;
+	  border-color: transparent transparent transparent white;
+	  transition: all 0.6s ease;
+	}
+
+	figure button[name="play"]:hover::after {
+		border-width: 25px 0 25px 40px;
+		border-color: transparent transparent transparent rgba(255,255,100,1)
+	}
+}
+</style>
+<body>
+	<div class="container">
+		<div class="row current-chord" id="current-chord">-</div>
+		<div class="row next-chord">Next <span id="next-chord">-</span></div>
+		<div class="row count">Count <span id="count">0</span></div>
+	</div>
+	<div class="audio">
+		<div class="row">
+			<audio id="myAudio">
+			  <source src="tick.mp3" type="audio/mpeg">
+			  Your browser does not support the audio element.
+			</audio>
+			<figure>
+			  <button onclick="go()"name="play"></button>
+			</figure>
+		</div>
+	</div>
+<script>
+
+	const getQueryVariable = function(variable) {
+		var query = window.location.search.substring(1);
+		var vars = query.split('&');
+		for (var i = 0; i < vars.length; i++) {
+			var pair = vars[i].split('=');
+			if (decodeURIComponent(pair[0]) == variable) {
+				return decodeURIComponent(pair[1]);
+			}
+		}
+	}
+
+	const getChordsFromQueryString = () => {
+		const value = [];
+		var index = 1;
+		var chord;
+
+		while (chord = getQueryVariable(`chord${index++}`)) {
+			value.push(chord);
+		}
+
+		return value;
+	}
+
+
+	const go = () => {
+		document.body.className += " playing"
+
+		const useBpm = parseInt(getQueryVariable('bpm')) || bpm;
+		console.log(useBpm)
+
+		const pickRandomValue = (arr) => arr[Math.floor(Math.random() * arr.length)]
+		const chords = getChordsFromQueryString()
+		for (var i = chords.length; i < chordsPerSession; i++) {
+			var c = pickRandomValue(allChords);
+			while (chords.indexOf(c) > -1) {
+				c = pickRandomValue(allChords);
+			}
+			chords.push(c);
+		}
+
+
+		var next = pickRandomValue(chords)
+		document.getElementById('next-chord').innerHTML = next;
+		var barCount = barsPerChord-2;
+
+		const playTick = () => {
+			document.getElementById('myAudio').play()
+		}
+
+		const showNext = () => {
+
+			var value = '-';
+			if (barCount === barsPerChord-1) {
+				const skipOn = next;
+				while (skipOn === next) {
+					next = pickRandomValue(chords);
+				}
+
+				value = next;
+			}
+
+			document.getElementById('next-chord').innerHTML = value;
+		}
+
+		const nextBar = () => {
+			barCount++;
+			if (barCount === barsPerChord) {
+				barCount = 0;
+				const current = next;
+				document.getElementById('current-chord').innerHTML = current;
+			}
+			showNext();
+		}
+
+		var counter = 0;
+
+		setInterval(() => {
+			counter++;
+			switch (counter) {
+				case 5:
+					nextBar()
+					counter = 1;
+					break;
+				default:
+					break;
+			}
+
+			document.getElementById('count').innerHTML = counter;
+			playTick()
+		}, (60/useBpm)*1000);
+	}
+</script>
+
+</body>
+</html>
